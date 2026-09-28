@@ -300,26 +300,28 @@ latex_documents = [
 # the title page.
 latex_logo = "_static/logo_2x.png"
 
+myst_substitutions = {}
+
 # An extension that allows replacements for code blocks that
 # are not supported in `rst_epilog` or other substitutions.
 # https://stackoverflow.com/a/56328457/2214933
-def source_replace(app, docname, source):
-    result = source[0]
-    for key in app.config.source_replacements:
-        result = result.replace(key, app.config.source_replacements[key])
-    source[0] = result
+# def source_replace(app, docname, source):
+#     result = source[0]
+#     for key in app.config.source_replacements:
+#         result = result.replace(key, app.config.source_replacements[key])
+#     source[0] = result
 
 
 # Dict of replacements. Also used by the `repos` feature below.
-source_replacements = {}
+# source_replacements = {}
 
 # These are the GH repos that have their latest release version accessible
-# in the docs through a special syntax: {{version nvm-sh/nvm}}. The version
-# is found only at build time.
-repos = ["nvm-sh/nvm"]
+# in the docs through a special syntax: {{ version_nvm_sh_nvm }}. The version
+# is found only at build time. All "-" characters are replaced with "_".
+repos = [["nvm-sh", "nvm"]]
 
-def latest_release_for_github_repo(repo):
-    latest_release_url = "https://api.github.com/repos/" + repo + "/releases/latest"
+def latest_release_for_github_repo(owner, name):
+    latest_release_url = "https://api.github.com/repos/" + owner + "/" + name + "/releases/latest"
     try:
         with req.urlopen(latest_release_url) as response:
             commit = json.load(response)
@@ -338,8 +340,10 @@ def latest_release_for_github_repo(repo):
         print(f"Unexpected error: {e}")
 
 for repo in repos:
-    source_replacements["{{version " + repo + "}}"] =\
-        latest_release_for_github_repo(repo)
+    [owner, name] = repo
+    myst_substitutions["version_" + owner.replace("-", "_") + "_" +\
+                       name.replace("-", "_")] =\
+                       latest_release_for_github_repo(owner, name)
 
 # -- sphinx-reredirects configuration ----------------------------------
 # https://documatt.com/sphinx-reredirects/usage.html
@@ -348,8 +352,8 @@ redirects = {
 }
 
 def setup(app):
-    app.add_config_value("source_replacements", {}, True)
-    app.connect("source-read", source_replace)
+    # app.add_config_value("source_replacements", {}, True)
+    # app.connect("source-read", source_replace)
 
     app.add_config_value("context", "plone-aurora", "env")
     app.tags.add("plone-aurora")
